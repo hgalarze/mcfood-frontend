@@ -1,14 +1,16 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { LoginForm } from "@/components/admin/admin-login-form";
+import { UserInfo } from "@/types/user";
 
 
 export default function AdminLoginPage() {
 
 	const router = useRouter()
 
-	const onLoginSuccess = () => {
-		router.push("/admin");
+	const onLoginSuccess = (user: UserInfo) => {
+		localStorage.setItem("user", JSON.stringify(user));
+		router.push("/admin/categories");
 	}
 
 	return (

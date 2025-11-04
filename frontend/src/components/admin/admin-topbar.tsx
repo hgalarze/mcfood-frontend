@@ -6,15 +6,28 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { AdminSidebar } from "./admin-sidebar";
-import { logout } from "@/lib/user-api";
+import { useAuthActions } from "@/hooks/use-users";
+import { UserInfo } from "@/types/user";
 
 export function AdminTopbar() {
 
 	const router = useRouter();
+	const { logout } = useAuthActions();
 
 	const getAuthUser = () => {
-		// This is a placeholder. Replace with actual user fetching logic.
-		return { email: "admin@mcfood.com" };
+		let user: UserInfo = {
+			id: "",
+			firstName: "Unknown",
+			lastName: "Unknown",
+			email: "unknown@unknown.com"
+		};
+		const userData = localStorage.getItem("user");
+
+		if (userData) {
+			user = JSON.parse(userData) as UserInfo;
+		}
+
+		return { email: user.email };
 	}
 
 	const handleLogout = async () => {

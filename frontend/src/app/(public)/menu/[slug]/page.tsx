@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { PageHero } from "@/components/page-hero";
 import { ProductCard } from "@/components/product-card";
 import { getCategory } from "@/lib/category-api";

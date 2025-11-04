@@ -7,11 +7,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { login } from "@/lib/user-api"
+import { useAuthActions } from "@/hooks/use-users"
 import { Loader2 } from "lucide-react"
+import { UserInfo } from "@/types/user"
 
 interface LoginFormProps {
-  onLoginSuccess: () => void
+  onLoginSuccess: (user: UserInfo) => void
 }
 
 export function LoginForm({ onLoginSuccess }: LoginFormProps) {
@@ -20,14 +21,15 @@ export function LoginForm({ onLoginSuccess }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
 
+  const { login } = useAuthActions()
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setIsLoading(true)
 
     try {
-      await login({ email, password })
-      onLoginSuccess()
+      const { user } = await login(email, password);
+      onLoginSuccess(user)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed")
     } finally {

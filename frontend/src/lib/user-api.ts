@@ -1,11 +1,12 @@
-import type { LoginCredentials, SearchParams, CreateUserData, UpdateUserData } from "@/types/user"
+import type { LoginCredentials, SearchParams, CreateUserData, UpdateUserData, UserInfo, LoginResponse } from "@/types/user"
+import { ApiError } from "@/lib/api-error";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || ""
+const API_BASE_URL = process.env.BACKEND_API_URL || ""
 
 // Login function
-export async function login(credentials: LoginCredentials): Promise<void> {
+export async function login(credentials: LoginCredentials): Promise<LoginResponse> {
     
-    const response = await fetch(`${API_BASE_URL}/api/users/login`, {
+    const res = await fetch(`${API_BASE_URL}/api/users/login`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -14,10 +15,12 @@ export async function login(credentials: LoginCredentials): Promise<void> {
         body: JSON.stringify(credentials),
     })
 
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: "Login failed" }))
+    if (!res.ok) {
+        const error = await res.json().catch(() => ({ message: "Login failed" }))
         throw new Error(error.message || "Login failed")
     }
+
+    return res.json();
 }
 
 // Logout function
@@ -34,46 +37,46 @@ export async function searchUsers(params: SearchParams) {
     if (params.pageSize) queryParams.append("pageSize", params.pageSize.toString())
     if (params.sort) queryParams.append("sort", params.sort)
 
-    const response = await fetch(`${API_BASE_URL}/api/users/search?${queryParams}`, {
+    const res = await fetch(`${API_BASE_URL}/api/users/search?${queryParams}`, {
         credentials: "include",
     })
 
-    if (!response.ok) {
-        throw new Error("Failed to search users")
+    if (!res.ok) {
+        throw new ApiError(res.status, await res.text());
     }
 
-    return response.json()
+    return res.json()
 }
 
 // Get all users
 export async function getUsers() {
-    const response = await fetch(`${API_BASE_URL}/api/users`, {
+    const res = await fetch(`${API_BASE_URL}/api/users`, {
         credentials: "include",
     })
 
-    if (!response.ok) {
-        throw new Error("Failed to fetch users")
+    if (!res.ok) {
+        throw new ApiError(res.status, await res.text());
     }
 
-    return response.json()
+    return res.json()
 }
 
 // Get user by ID
 export async function getUserById(id: string) {
-    const response = await fetch(`${API_BASE_URL}/api/users/${id}`, {
+    const res = await fetch(`${API_BASE_URL}/api/users/${id}`, {
         credentials: "include",
     })
 
-    if (!response.ok) {
-        throw new Error("Failed to fetch user")
+    if (!res.ok) {
+        throw new ApiError(res.status, await res.text());
     }
 
-    return response.json()
+    return res.json()
 }
 
 // Create user
 export async function createUser(data: CreateUserData) {
-    const response = await fetch(`${API_BASE_URL}/api/users`, {
+    const res = await fetch(`${API_BASE_URL}/api/users`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -82,17 +85,16 @@ export async function createUser(data: CreateUserData) {
         body: JSON.stringify(data),
     })
 
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: "Failed to create user" }))
-        throw new Error(error.message || "Failed to create user")
+    if (!res.ok) {
+        throw new ApiError(res.status, await res.text());
     }
 
-    return response.json()
+    return res.json()
 }
 
 // Update user (PATCH for partial update)
 export async function updateUser(id: string, data: UpdateUserData) {
-    const response = await fetch(`${API_BASE_URL}/api/users/${id}`, {
+    const res = await fetch(`${API_BASE_URL}/api/users/${id}`, {
         method: "PATCH",
         headers: {
             "Content-Type": "application/json",
@@ -101,24 +103,23 @@ export async function updateUser(id: string, data: UpdateUserData) {
         body: JSON.stringify(data),
     })
 
-    if (!response.ok) {
-        const error = await response.json().catch(() => ({ message: "Failed to update user" }))
-        throw new Error(error.message || "Failed to update user")
+    if (!res.ok) {
+        throw new ApiError(res.status, await res.text());
     }
 
-    return response.json()
+    return res.json()
 }
 
 // Delete user
 export async function deleteUser(id: string) {
-    const response = await fetch(`${API_BASE_URL}/api/users/${id}`, {
+    const res = await fetch(`${API_BASE_URL}/api/users/${id}`, {
         method: "DELETE",
         credentials: "include",
     })
 
-    if (!response.ok) {
-        throw new Error("Failed to delete user")
+    if (!res.ok) {
+        throw new ApiError(res.status, await res.text());
     }
 
-    return response.json()
+    return res.json()
 }

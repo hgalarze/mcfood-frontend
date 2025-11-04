@@ -1,107 +1,112 @@
-"use client"
+"use client";
 
-import { useEffect, useMemo, useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { UsersTable } from "@/components/admin/users/users-table"
-import { UserFormModal } from "@/components/admin/users/user-form-modal"
-import { UserViewModal } from "@/components/admin/users/user-view-modal"
-import { Plus, Search } from "lucide-react"
-import type { User } from "@/types/user"
-import { useSearchUsers } from "@/hooks/use-users"
-import type { CreateUserData, UpdateUserData } from "@/types/user"
-import { createUser, updateUser, deleteUser } from "@/lib/user-api"
-import { useToast } from "@/hooks/use-toast"
-import { useDebounce } from "@/hooks/use-debounce"
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { UsersTable } from "@/components/admin/users/users-table";
+import { UserFormModal } from "@/components/admin/users/user-form-modal";
+import { UserViewModal } from "@/components/admin/users/user-view-modal";
+import { Plus, Search } from "lucide-react";
+import type { User, CreateUserData, UpdateUserData } from "@/types/user";
+import {
+  useSearchUsers,
+  useUserMutations
+} from "@/hooks/use-users";
+import { useToast } from "@/hooks/use-toast";
+import { useDebounce } from "@/hooks/use-debounce";
 
 export function UsersManagement() {
-  const { toast } = useToast()
-  const [searchQuery, setSearchQuery] = useState("")
-  const [currentPage, setCurrentPage] = useState(1)
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
-  const [isViewModalOpen, setIsViewModalOpen] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
-  const itemsPerPage = 5
+  const itemsPerPage = 5;
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
-  // Debounce para búsqueda
-  const debouncedSearchQuery = useDebounce(searchQuery, 500)
-
-  // Cuando cambia el término de búsqueda (debounced), volvemos a la página 1
   useEffect(() => {
-    setCurrentPage(1)
-  }, [debouncedSearchQuery])
+    setCurrentPage(1);
+  }, [debouncedSearchQuery]);
 
   const { users, total, isLoading, mutate } = useSearchUsers({
-    // email undefined => **carga inicial** sin filtro
     query: debouncedSearchQuery?.trim() ? debouncedSearchQuery.trim() : undefined,
     page: currentPage,
     pageSize: itemsPerPage,
     sort: "lastName:asc",
-  })
+  });
 
-  const totalPages = useMemo(() => Math.max(1, Math.ceil((total ?? 0) / itemsPerPage)), [total])
+  const { create, update, remove } = useUserMutations();
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil((total ?? 0) / itemsPerPage)),
+    [total, itemsPerPage]
+  );
+
+  /* ------------------------------ Handlers CRUD ------------------------------ */
 
   const handleCreateUser = async (userData: CreateUserData) => {
     try {
-      await createUser(userData)
-      setIsCreateModalOpen(false)
-      setCurrentPage(1)
-      await mutate() // Revalida la lista
-      toast({ title: "Success", description: "User created successfully" })
+      await create(userData);
+      setIsCreateModalOpen(false);
+      setCurrentPage(1);
+      // opcional: await mutate(); // ya revalida globalmente /api/users
+      toast({ title: "Success", description: "User created successfully" });
     } catch (error) {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to create user",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleEditUser = async (userData: UpdateUserData) => {
-    if (!selectedUser) return
+    if (!selectedUser) return;
     try {
-      await updateUser(selectedUser._id, userData)
-      setIsEditModalOpen(false)
-      setSelectedUser(null)
-      await mutate()
-      toast({ title: "Success", description: "User updated successfully" })
+      await update(selectedUser._id, userData);
+      setIsEditModalOpen(false);
+      setSelectedUser(null);
+      // opcional: await mutate();
+      toast({ title: "Success", description: "User updated successfully" });
     } catch (error) {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to update user",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) return
+    if (!confirm("Are you sure you want to delete this user?")) return;
     try {
-      await deleteUser(userId)
-      // Si borramos el último de la página, retrocedemos de página antes de revalidar
-      if (users.length === 1 && currentPage > 1) setCurrentPage((p) => p - 1)
-      await mutate()
-      toast({ title: "Success", description: "User deleted successfully" })
+      if (users.length === 1 && currentPage > 1) setCurrentPage((p) => p - 1);
+      await remove(userId);
+      // opcional: await mutate();
+      toast({ title: "Success", description: "User deleted successfully" });
     } catch (error) {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to delete user",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleViewUser = (user: User) => {
-    setSelectedUser(user)
-    setIsViewModalOpen(true)
-  }
+    setSelectedUser(user);
+    setIsViewModalOpen(true);
+  };
 
   const handleEditClick = (user: User) => {
-    setSelectedUser(user)
-    setIsEditModalOpen(true)
-  }
+    setSelectedUser(user);
+    setIsEditModalOpen(true);
+  };
+
+  /* --------------------------------- UI --------------------------------- */
 
   if (isLoading && users.length === 0) {
     return (
@@ -111,13 +116,11 @@ export function UsersManagement() {
           <p className="mt-4 text-muted-foreground">Loading users...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <>
-
-
       {/* Header */}
       <div className="mb-8 flex items-start justify-between">
         <div>
@@ -175,5 +178,5 @@ export function UsersManagement() {
 
       <UserViewModal open={isViewModalOpen} onOpenChange={setIsViewModalOpen} user={selectedUser} />
     </>
-  )
+  );
 }

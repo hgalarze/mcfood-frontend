@@ -36,3 +36,16 @@ export interface SearchParams {
     pageSize?: number
     sort?: string
 }
+
+export type UserInfo = {
+    id: string
+    email: string
+    firstName: string
+    lastName: string
+}
+
+export type LoginResponse = {
+    message: string
+    user: UserInfo,
+    token: string
+}
